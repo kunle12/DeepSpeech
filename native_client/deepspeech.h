@@ -3,10 +3,10 @@
 
 #ifndef SWIG
     #if defined _MSC_VER
-        #define DEEPSPEECH_EXPORT extern "C" __declspec(dllexport) 
-    #else                                                                   /*End of _MSC_VER*/  
+        #define DEEPSPEECH_EXPORT extern "C" __declspec(dllexport)
+    #else                                                                   /*End of _MSC_VER*/
         #define DEEPSPEECH_EXPORT __attribute__ ((visibility("default")))
-#endif                                                                      /*End of SWIG*/  
+#endif                                                                      /*End of SWIG*/
 #else
     #define DEEPSPEECH_EXPORT
 #endif
@@ -123,7 +123,7 @@ char* DS_SpeechToText(ModelState* aCtx,
                       unsigned int aSampleRate);
 
 /**
- * @brief Use the DeepSpeech model to perform Speech-To-Text and output metadata 
+ * @brief Use the DeepSpeech model to perform Speech-To-Text and output metadata
  * about the results.
  *
  * @param aCtx The ModelState pointer for the model to use.
@@ -132,7 +132,7 @@ char* DS_SpeechToText(ModelState* aCtx,
  * @param aBufferSize The number of samples in the audio signal.
  * @param aSampleRate The sample-rate of the audio signal.
  *
- * @return Outputs a struct of individual letters along with their timing information. 
+ * @return Outputs a struct of individual letters along with their timing information.
  *         The user is responsible for freeing Metadata by calling {@link DS_FreeMetadata()}. Returns NULL on error.
  */
 DEEPSPEECH_EXPORT
@@ -148,7 +148,7 @@ Metadata* DS_SpeechToTextWithMetadata(ModelState* aCtx,
  *
  * @param aCtx The ModelState pointer for the model to use.
  * @param aPreAllocFrames Number of timestep frames to reserve. One timestep
- *                        is equivalent to two window lengths (20ms). If set to 
+ *                        is equivalent to two window lengths (20ms). If set to
  *                        0 we reserve enough frames for 3 seconds of audio (150).
  * @param aSampleRate The sample-rate of the audio signal.
  * @param[out] retval an opaque pointer that represents the streaming state. Can
@@ -190,6 +190,21 @@ DEEPSPEECH_EXPORT
 char* DS_IntermediateDecode(StreamingState* aSctx);
 
 /**
+ * @brief Compute the decoding of an ongoing streaming inference and resets the
+ *        stream state.
+ *        This is an expensive process as the decoder implementation isn't
+ *        currently capable of streaming, so it always starts from the beginning
+ *        of the audio.
+ *
+ * @param aSctx A streaming state pointer returned by {@link DS_SetupStream()}.
+ *
+ * @return The STT intermediate result. The user is responsible for freeing the
+ *         string.
+ */
+DEEPSPEECH_EXPORT
+char* DS_DecodeStream(StreamingState* aSctx);
+
+/**
  * @brief Signal the end of an audio signal to an ongoing streaming
  *        inference, returns the STT result over the whole audio signal.
  *
@@ -208,13 +223,24 @@ char* DS_FinishStream(StreamingState* aSctx);
  *
  * @param aSctx A streaming state pointer returned by {@link DS_SetupStream()}.
  *
- * @return Outputs a struct of individual letters along with their timing information. 
+ * @return Outputs a struct of individual letters along with their timing information.
  *         The user is responsible for freeing Metadata by calling {@link DS_FreeMetadata()}. Returns NULL on error.
  *
  * @note This method will free the state pointer (@p aSctx).
  */
 DEEPSPEECH_EXPORT
 Metadata* DS_FinishStreamWithMetadata(StreamingState* aSctx);
+
+/**
+ * @brief Reset a streaming state without decoding the computed logits. This
+ *        can be used if you need to reaccumulating audio data from the beginning
+ *
+ * @param aSctx A streaming state pointer returned by {@link DS_SetupStream()}.
+ *
+ * @note This method will **NOT** free the state pointer (@p aSctx).
+ */
+DEEPSPEECH_EXPORT
+void DS_ResetStream(StreamingState* aSctx);
 
 /**
  * @brief Destroy a streaming state without decoding the computed logits. This
@@ -264,7 +290,7 @@ void DS_AudioToInputVector(const short* aBuffer,
  */
 
 DEEPSPEECH_EXPORT
-void DS_FreeMetadata(Metadata* m); 
+void DS_FreeMetadata(Metadata* m);
 
 /**
  * @brief Print version of this library and of the linked TensorFlow library.

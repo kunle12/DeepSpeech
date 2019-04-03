@@ -192,7 +192,7 @@ struct ModelState {
    * @return Metadata struct containing MetadataItem structs for each character.
    * The user is responsible for freeing Metadata by calling DS_FreeMetadata().
    */
-  Metadata* decode_metadata(vector<float>& logits); 
+  Metadata* decode_metadata(vector<float>& logits);
 
   /**
    * @brief Do a single inference step in the acoustic model, with:
@@ -481,7 +481,7 @@ ModelState::decode_raw(const vector<float>& logits)
   return out;
 }
 
-Metadata* ModelState::decode_metadata(vector<float>& logits) 
+Metadata* ModelState::decode_metadata(vector<float>& logits)
 {
   vector<Output> out = decode_raw(logits);
 
@@ -492,10 +492,10 @@ Metadata* ModelState::decode_metadata(vector<float>& logits)
 
   // Loop through each character
   for (int i = 0; i < out[0].tokens.size(); ++i) {
-    metadata->items[i].character = (char*)alphabet->StringFromLabel(out[0].tokens[i]).c_str(); 
-    metadata->items[i].timestep = out[0].timesteps[i]; 
+    metadata->items[i].character = (char*)alphabet->StringFromLabel(out[0].tokens[i]).c_str();
+    metadata->items[i].timestep = out[0].timesteps[i];
     metadata->items[i].start_time = static_cast<float>(out[0].timesteps[i] * AUDIO_WIN_STEP);
-    
+
     if (metadata->items[i].start_time < 0) {
       metadata->items[i].start_time = 0;
     }
@@ -550,7 +550,7 @@ DS_CreateModel(const char* aModelPath,
 
   *retval = nullptr;
 
-  DS_PrintVersions();
+  //DS_PrintVersions();
 
   if (!aModelPath || strlen(aModelPath) < 1) {
     std::cerr << "No model specified, cannot continue." << std::endl;
@@ -747,7 +747,7 @@ DS_SpeechToTextWithMetadata(ModelState* aCtx,
   return DS_FinishStreamWithMetadata(ctx);
 }
 
-StreamingState* 
+StreamingState*
 setupStreamAndFeedAudioContent(ModelState* aCtx,
                                   const short* aBuffer,
                                   unsigned int aBufferSize,
@@ -758,7 +758,7 @@ setupStreamAndFeedAudioContent(ModelState* aCtx,
   if (status != DS_ERR_OK) {
     return nullptr;
   }
-      
+
   DS_FeedAudioContent(ctx, aBuffer, aBufferSize);
 
   return ctx;
@@ -822,6 +822,14 @@ DS_IntermediateDecode(StreamingState* aSctx)
 }
 
 char*
+DS_DecodeStream(StreamingState* aSctx)
+{
+  char* str = aSctx->finishStream();
+  DS_ResetStream(aSctx);
+  return str;
+}
+
+char*
 DS_FinishStream(StreamingState* aSctx)
 {
   char* str = aSctx->finishStream();
@@ -835,6 +843,18 @@ DS_FinishStreamWithMetadata(StreamingState* aSctx)
   Metadata* metadata = aSctx->finishStreamWithMetadata();
   DS_DiscardStream(aSctx);
   return metadata;
+}
+
+void
+DS_ResetStream(StreamingState* aSctx)
+{
+  aSctx->accumulated_logits.clear();
+
+  aSctx->audio_buffer.clear();
+  aSctx->last_sample = 0;
+  aSctx->mfcc_buffer.clear();
+  aSctx->mfcc_buffer.clear();
+  aSctx->batch_buffer.clear();
 }
 
 void
@@ -911,9 +931,9 @@ DS_AudioToInputVector(const short* aBuffer,
   }
 }
 
-void 
-DS_FreeMetadata(Metadata* m) 
-{  
+void
+DS_FreeMetadata(Metadata* m)
+{
   if (m) {
     delete(m->items);
     delete(m);
@@ -931,4 +951,3 @@ DS_PrintVersions() {
   LOGD("DeepSpeech: %s", ds_git_version());
 #endif
 }
-
