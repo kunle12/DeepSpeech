@@ -19,10 +19,14 @@ def create_flags():
     tf.app.flags.DEFINE_string  ('dev_cached_features_path',        '',          'comma separated list of files specifying the dataset used for validation. multiple files will get merged')
     tf.app.flags.DEFINE_string  ('test_cached_features_path',       '',          'comma separated list of files specifying the dataset used for testing. multiple files will get merged')
 
+    tf.app.flags.DEFINE_integer ('feature_win_len',  32,          'feature extraction audio window length in milliseconds')
+    tf.app.flags.DEFINE_integer ('feature_win_step', 20,          'feature extraction window step length in milliseconds')
+    tf.app.flags.DEFINE_integer ('audio_sample_rate',16000,       'sample rate value expected by model')
+
     # Global Constants
     # ================
 
-    tf.app.flags.DEFINE_integer ('epoch',            75,          'target epoch to train - if negative, the absolute number of additional epochs will be trained')
+    tf.app.flags.DEFINE_integer ('epochs',           75,          'how many epochs (complete runs through the train files) to train for')
 
     tf.app.flags.DEFINE_float   ('dropout_rate',     0.05,        'dropout rate for feedforward layers')
     tf.app.flags.DEFINE_float   ('dropout_rate2',    -1.0,        'dropout rate for layer 2 - defaults to dropout_rate')
@@ -73,6 +77,7 @@ def create_flags():
     tf.app.flags.DEFINE_boolean ('export_tflite',    False,       'export a graph ready for TF Lite engine')
     tf.app.flags.DEFINE_boolean ('use_seq_length',   True,        'have sequence_length in the exported graph (will make tfcompile unhappy)')
     tf.app.flags.DEFINE_integer ('n_steps',          16,          'how many timesteps to process at once by the export graph, higher values mean more latency')
+    tf.app.flags.DEFINE_string  ('export_language',  '',          'language the model was trained on e.g. "en" or "English". Gets embedded into exported model.')
 
     # Reporting
 
