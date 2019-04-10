@@ -38,14 +38,14 @@ def sparse_tuple_to_texts(tuple, alphabet):
     return results
 
 
-def evaluate(test_csvs, create_model):
+def evaluate(test_csvs, create_model, try_loading):
     scorer = Scorer(FLAGS.lm_alpha, FLAGS.lm_beta,
                     FLAGS.lm_binary_path, FLAGS.lm_trie_path,
                     Config.alphabet)
 
-    test_set, test_batches = create_dataset(test_csvs,
-                                            batch_size=FLAGS.test_batch_size,
-                                            cache_path=FLAGS.test_cached_features_path)
+    test_set = create_dataset(test_csvs,
+                              batch_size=FLAGS.test_batch_size,
+                              cache_path=FLAGS.test_cached_features_path)
     it = test_set.make_one_shot_iterator()
 
     (batch_x, batch_x_len), batch_y = it.get_next()
@@ -63,18 +63,19 @@ def evaluate(test_csvs, create_model):
                           inputs=logits,
                           sequence_length=batch_x_len)
 
+    global_step = tf.train.get_or_create_global_step()
+
     with tf.Session(config=Config.session_config) as session:
         # Create a saver using variables from the above newly created graph
         saver = tf.train.Saver()
 
         # Restore variables from training checkpoint
-        checkpoint = tf.train.get_checkpoint_state(FLAGS.checkpoint_dir)
-        if not checkpoint:
+        loaded = try_loading(session, saver, 'best_dev_checkpoint', 'best validation')
+        if not loaded:
+            loaded = try_loading(session, saver, 'checkpoint', 'most recent')
+        if not loaded:
             log_error('Checkpoint directory ({}) does not contain a valid checkpoint state.'.format(FLAGS.checkpoint_dir))
             exit(1)
-
-        checkpoint_path = checkpoint.model_checkpoint_path
-        saver.restore(session, checkpoint_path)
 
         logitses = []
         losses = []
@@ -82,17 +83,26 @@ def evaluate(test_csvs, create_model):
         ground_truths = []
 
         print('Computing acoustic model predictions...')
-        bar = progressbar.ProgressBar(max_value=test_batches,
-                                      widget=progressbar.AdaptiveETA)
+        bar = progressbar.ProgressBar(widgets=['Steps: ', progressbar.Counter(), ' | ', progressbar.Timer()])
+
+        step_count = 0
 
         # First pass, compute losses and transposed logits for decoding
-        for batch in bar(range(test_batches)):
-            logits, loss_, lengths, transcripts = session.run([transposed, loss, batch_x_len, batch_y])
+        while True:
+            try:
+                logits, loss_, lengths, transcripts = session.run([transposed, loss, batch_x_len, batch_y])
+            except tf.errors.OutOfRangeError:
+                break
+
+            step_count += 1
+            bar.update(step_count)
 
             logitses.append(logits)
             losses.extend(loss_)
             seq_lengths.append(lengths)
             ground_truths.extend(sparse_tensor_value_to_texts(transcripts, Config.alphabet))
+
+    bar.finish()
 
     predictions = []
 
@@ -103,7 +113,7 @@ def evaluate(test_csvs, create_model):
         num_processes = 1
 
     print('Decoding predictions...')
-    bar = progressbar.ProgressBar(max_value=test_batches,
+    bar = progressbar.ProgressBar(max_value=step_count,
                                   widget=progressbar.AdaptiveETA)
 
     # Second pass, decode logits and compute WER and edit distance metrics
@@ -141,8 +151,8 @@ def main(_):
                   'the --test_files flag.')
         exit(1)
 
-    from DeepSpeech import create_model
-    samples = evaluate(FLAGS.test_files.split(','), create_model)
+    from DeepSpeech import create_model, try_loading
+    samples = evaluate(FLAGS.test_files.split(','), create_model, try_loading)
 
     if FLAGS.test_output_file:
         # Save decoded tuples as JSON, converting NumPy floats to Python floats
@@ -151,6 +161,5 @@ def main(_):
 
 if __name__ == '__main__':
     create_flags()
-    tf.app.flags.DEFINE_string('hdf5_test_set', '', 'path to hdf5 file to cache test set features')
     tf.app.flags.DEFINE_string('test_output_file', '', 'path to a file to save all src/decoded/distance/loss tuples')
     tf.app.run(main)
