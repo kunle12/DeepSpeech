@@ -3,6 +3,10 @@ from __future__ import absolute_import, division, print_function
 
 import codecs
 import sys
+import os
+
+sys.path.insert(1, os.path.join(sys.path[0], '..'))
+
 import tarfile
 import pandas
 import re
@@ -14,8 +18,8 @@ from six.moves import urllib
 from glob import glob
 from os import makedirs, path
 from bs4 import BeautifulSoup
-from tensorflow.python.platform import gfile
 from util.downloader import maybe_download
+from tensorflow.python.platform import gfile
 
 """The number of jobs to run in parallel"""
 NUM_PARALLEL = 8
@@ -188,7 +192,3 @@ def _generate_dataset(data_dir, data_set):
 
 if __name__=="__main__":
     _download_and_preprocess_data(sys.argv[1])
-
-
-
-
