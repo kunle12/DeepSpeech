@@ -43,6 +43,11 @@ Model.prototype.stt = function() {
     return binding.SpeechToText.apply(null, args);
 }
 
+Model.prototype.sttWithMetadata = function() {
+    const args = [this._impl].concat(Array.prototype.slice.call(arguments));
+    return binding.SpeechToTextWithMetadata.apply(null, args);
+}
+
 Model.prototype.setupStream = function() {
     const args = [this._impl].concat(Array.prototype.slice.call(arguments));
     const rets = binding.SetupStream.apply(null, args);
@@ -66,7 +71,17 @@ Model.prototype.finishStream = function() {
     return binding.FinishStream.apply(null, arguments);
 }
 
+Model.prototype.finishStreamWithMetadata = function() {
+    return binding.FinishStreamWithMetadata.apply(null, arguments);
+}
+
+function DestroyModel(model) {
+    return binding.DestroyModel(model._impl);
+}
+
 module.exports = {
     Model: Model,
-    printVersions: binding.PrintVersions
+    printVersions: binding.PrintVersions,
+    DestroyModel: DestroyModel,
+    FreeMetadata: binding.FreeMetadata
 };

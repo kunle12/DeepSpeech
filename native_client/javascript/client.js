@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-
 'use strict';
 
 const Fs = require('fs');
@@ -56,11 +55,21 @@ parser.addArgument(['--alphabet'], {required: true, help: 'Path to the configura
 parser.addArgument(['--lm'], {help: 'Path to the language model binary file', nargs: '?'});
 parser.addArgument(['--trie'], {help: 'Path to the language model trie file created with native_client/generate_trie', nargs: '?'});
 parser.addArgument(['--audio'], {required: true, help: 'Path to the audio file to run (WAV format)'});
-parser.addArgument(['--version'], {action: VersionAction, help: 'Print version and exits'})
+parser.addArgument(['--version'], {action: VersionAction, help: 'Print version and exits'});
+parser.addArgument(['--extended'], {action: 'storeTrue', help: 'Output string from extended metadata'});
 var args = parser.parseArgs();
 
 function totalTime(hrtimeValue) {
   return (hrtimeValue[0] + hrtimeValue[1] / 1000000000).toPrecision(4);
+}
+
+function metadataToString(metadata) {
+  var retval = ""
+  for (var i = 0; i < metadata.num_items; ++i) {
+    retval += metadata.items[i].character;
+  }
+  Ds.FreeMetadata(metadata);
+  return retval;
 }
 
 const buffer = Fs.readFileSync(args['audio']);
@@ -119,8 +128,13 @@ audioStream.on('finish', () => {
 
   // We take half of the buffer_size because buffer is a char* while
   // LocalDsSTT() expected a short*
-  console.log(model.stt(audioBuffer.slice(0, audioBuffer.length / 2), 16000));
+  if (args['extended']) {
+    console.log(metadataToString(model.sttWithMetadata(audioBuffer.slice(0, audioBuffer.length / 2), 16000)));
+  } else {
+    console.log(model.stt(audioBuffer.slice(0, audioBuffer.length / 2), 16000));
+  }
   const inference_stop = process.hrtime(inference_start);
   console.error('Inference took %ds for %ds audio file.', totalTime(inference_stop), audioLength.toPrecision(4));
+  Ds.DestroyModel(model);
   process.exit(0);
 });
