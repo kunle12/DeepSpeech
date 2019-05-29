@@ -3,10 +3,10 @@
 
 #ifndef SWIG
     #if defined _MSC_VER
-        #define DEEPSPEECH_EXPORT extern "C" __declspec(dllexport)
-    #else                                                                   /*End of _MSC_VER*/
-        #define DEEPSPEECH_EXPORT __attribute__ ((visibility("default")))
-#endif                                                                      /*End of SWIG*/
+        #define DEEPSPEECH_EXPORT extern "C" __declspec(dllexport) 
+    #else                                                                   /*End of _MSC_VER*/  
+        #define DEEPSPEECH_EXPORT extern "C" __attribute__ ((visibility("default")))
+#endif                                                                      /*End of SWIG*/  
 #else
     #define DEEPSPEECH_EXPORT
 #endif
