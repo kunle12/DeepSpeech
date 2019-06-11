@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 """
 Usage: $ python3 check_characters.py "INFILE"
  e.g.  $ python3 check_characters.py -csv /home/data/french.csv
