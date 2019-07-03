@@ -438,13 +438,11 @@ DS_SpeechToTextWithMetadata(ModelState* aCtx,
 void
 DS_ResetStream(StreamingState* aSctx)
 {
-  aSctx->accumulated_logits.clear();
-
-  aSctx->audio_buffer.clear();
-  aSctx->last_sample = 0;
-  aSctx->mfcc_buffer.clear();
-  aSctx->mfcc_buffer.clear();
-  aSctx->batch_buffer.clear();
+  aSctx->audio_buffer_.clear();
+  aSctx->mfcc_buffer_.clear();
+  aSctx->batch_buffer_.clear();
+  aSctx->previous_state_c_.clear();
+  aSctx->previous_state_h_.clear();
 }
 
 void
